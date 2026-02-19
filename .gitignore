@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# Compiled files
+*.o
+*.out
+*.a
+
+# Executables
+a.out
+*.exe
+
+# 42 / C build folders
+build/
+bin/
+
+# Temporary
+*.swp
+*.tmp
+
