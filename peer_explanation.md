@@ -386,6 +386,359 @@ If you break one link (`next`), everything after it becomes unreachable.
 
 ---
 
+# ➖ Deleting Nodes (Head & Tail)
+
+Now the list already works.
+Insertion builds the chain.
+
+Deletion is the opposite operation:
+we must **remove a node AND repair the chain**.
+
+Very important rule:
+
+> In linked lists you never “erase a value”  
+> you erase the node AND reconnect the neighbors
+
+---
+
+## 🧠 The danger when deleting
+If you `free()` a node but another pointer still points to it:
+
+→ you create a **dangling pointer**
+→ accessing it = undefined behavior / crash
+
+So every delete operation always has TWO jobs:
+
+1) Save where the list must continue
+2) Free the removed node
+
+---
+
+# 🗑️ Delete at Head
+
+```c
+Node *delete_at_head(Node *head){
+  if (head == NULL) return (NULL);
+  else
+  {
+    Node *to_return = head->next;
+    free(head);
+    return (to_return);
+  }
+}
+````
+
+---
+
+## Step-by-step memory view
+
+Current list:
+
+```
+head
+ |
+ v
+[3 | *-] ---> [5 | *-] ---> [7 | NULL]
 ```
 
+### Step 1 — Save next node
+
+```
+to_return = head->next
+
+to_return
+ |
+ v
+[5 | *-] ---> [7 | NULL]
+```
+
+### Step 2 — Free old head
+
+```
+free(head)
+```
+
+The node `[3]` disappears from heap.
+
+### Step 3 — Return new head
+
+```
+head becomes to_return
+
+head
+ |
+ v
+[5 | *-] ---> [7 | NULL]
+```
+
+---
+
+## Memory layout (stack vs heap)
+
+Before delete:
+
+```
+STACK                       HEAP
+list1_head  ---------->   [3 | *] -> [5 | *] -> [7 | NULL]
+```
+
+After delete:
+
+```
+STACK                       HEAP
+list1_head  ---------->   [5 | *] -> [7 | NULL]
+
+( node 3 freed )
+```
+
+---
+
+## Key idea
+
+Head deletion is simple because:
+
+> The list already stores the next node for us
+
+We just move the head forward.
+
+Time complexity: **O(1)**
+
+---
+
+# 🗑️ Delete at Tail
+
+This one is harder.
+
+Why?
+
+Because nodes do NOT know who points to them.
+
+The last node cannot be removed directly —
+we must first find the node BEFORE it.
+
+---
+
+```c
+Node *delete_at_tail(Node *head)
+{
+  if (head == NULL) return (NULL);
+
+  else if (head->next == NULL)
+  {
+    free(head);
+    return (NULL);
+  }
+
+  else
+  {
+    Node *current = head;
+    Node *prev = NULL;
+
+    while (current->next != NULL)
+    {
+      prev = current;
+      current = current->next;
+    }
+
+    prev->next = NULL;
+    free(current);
+    return (head);
+  }
+}
+```
+
+---
+
+## Step-by-step diagram
+
+Starting list:
+
+```
+head
+ |
+ v
+[3 | *] ---> [5 | *] ---> [7 | NULL]
+```
+
+### Traversal phase
+
+We move two pointers:
+
+```
+prev      current
+ |           |
+ v           v
+[3] ----> [5] ----> [7]
+```
+
+Loop ends when `current->next == NULL`
+
+So:
+
+```
+prev = [5]
+current = [7]
+```
+
+---
+
+### Disconnect last node
+
+```
+prev->next = NULL
+```
+
+Now:
+
+```
+[3] ---> [5] ---> NULL     [7] (isolated)
+```
+
+### Free last node
+
+```
+free(current)
+```
+
+Final list:
+
+```
+head
+ |
+ v
+[3 | *] ---> [5 | NULL]
+```
+
+---
+
+## Memory layout
+
+Before:
+
+```
+STACK                        HEAP
+list1_head  ---------->   [3] -> [5] -> [7]
+```
+
+After:
+
+```
+STACK                        HEAP
+list1_head  ---------->   [3] -> [5]
+
+(node 7 freed)
+```
+
+---
+
+## Special case — single element list
+
+```
+head -> [7 | NULL]
+```
+
+We delete tail:
+
+```
+free(head)
+return NULL
+```
+
+Now list becomes empty again.
+
+---
+
+## Why we used two pointers (prev & current)
+
+Because singly linked list only knows → next
+
+It does NOT know → previous
+
+So we simulate "previous" manually while walking.
+
+This is the most important linked list traversal pattern:
+
+```
+prev = current
+current = current->next
+```
+
+You will use this pattern in:
+
+* delete specific value
+* reverse list
+* insert in middle
+* sorting list
+
+---
+
+## Complexity comparison
+
+| Operation      | Time |
+| -------------- | ---- |
+| delete_at_head | O(1) |
+| delete_at_tail | O(n) |
+
+Reason:
+Head already known
+Tail must be searched
+
+---
+
+## Mental model to remember
+
+Linked list operations always follow this law:
+
+> When adding → connect new node
+> When deleting → reconnect neighbors
+
+---
+
+## Final execution of your program
+
+Initial insertions (head insert):
+
+```
+3 -> 5 -> 7
+```
+
+After deleting head:
+
+```
+5 -> 7
+```
+
+After deleting tail:
+
+```
+5
+```
+
+Program output:
+
+```
+Before Delete:
+Node 0: 3
+Node 1: 5
+Node 2: 7
+
+After Deleting head:
+Node 0: 5
+Node 1: 7
+
+After Deleting tail:
+Node 0: 5
+```
+
+---
+
+## Common beginner mistakes avoided here
+
+1. Freeing before saving next pointer
+2. Losing head pointer
+3. Forgetting single-node case
+4. Not setting prev->next = NULL
+5. Accessing freed memory
+
+---
 
